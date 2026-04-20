@@ -1,0 +1,158 @@
+---
+title: Node.js — AWS Lambda
+description: Instrument a Node.js Lambda function with OpenTelemetry and send traces to Trace0.
+---
+
+<Note>
+  You only need to add the **Node.js Lambda layer** — no separate collector layer is required. Trace0 handles ingestion directly.
+</Note>
+
+## 1. Add the OpenTelemetry Lambda Layer
+
+Find the latest `layer-nodejs` ARN for your AWS region from the [opentelemetry-lambda releases page](https://github.com/open-telemetry/opentelemetry-lambda/releases). Add the layer ARN to your function.
+
+## 2. Set Environment Variables
+
+| Variable | Value |
+|---|---|
+| `AWS_LAMBDA_EXEC_WRAPPER` | `/opt/otel-handler` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY` |
+
+## 3. Configure Your Infrastructure
+
+<Tabs>
+  <Tab title="CloudFormation">
+    ```yaml
+    Parameters:
+      OtelNodeLayerArn:
+        Type: String
+        Description: >
+          Node.js layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases
+      Trace0ApiKey:
+        Type: String
+        NoEcho: true
+
+    Resources:
+      MyFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+          FunctionName: my-node-function
+          Runtime: nodejs22.x
+          Handler: index.handler
+          Code:
+            S3Bucket: !Ref DeploymentBucket
+            S3Key: function.zip
+          Layers:
+            - !Ref OtelNodeLayerArn
+          Environment:
+            Variables:
+              AWS_LAMBDA_EXEC_WRAPPER:      /opt/otel-handler
+              OTEL_EXPORTER_OTLP_PROTOCOL:  http/protobuf
+              OTEL_EXPORTER_OTLP_ENDPOINT:  https://app.trace0hq.com/api
+              OTEL_EXPORTER_OTLP_HEADERS:   !Sub "X-API-KEY=${Trace0ApiKey}"
+    ```
+  </Tab>
+  <Tab title="Terraform">
+    ```hcl
+    variable "otel_node_layer_arn" {
+      type        = string
+      description = "Node.js layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases"
+    }
+
+    variable "trace0_api_key" {
+      type      = string
+      sensitive = true
+    }
+
+    resource "aws_lambda_function" "app" {
+      function_name = "my-node-function"
+      runtime       = "nodejs22.x"
+      handler       = "index.handler"
+      filename      = "function.zip"
+
+      layers = [var.otel_node_layer_arn]
+
+      environment {
+        variables = {
+          AWS_LAMBDA_EXEC_WRAPPER      = "/opt/otel-handler"
+          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
+          OTEL_EXPORTER_OTLP_HEADERS  = "X-API-KEY=${var.trace0_api_key}"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="CDK (TypeScript)">
+    ```typescript
+    import * as lambda from 'aws-cdk-lib/aws-lambda';
+
+    // Find the latest layer ARN at:
+    // https://github.com/open-telemetry/opentelemetry-lambda/releases
+    const otelLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this, 'OtelNodeLayer',
+      'arn:aws:lambda:us-east-1:184161586896:layer:opentelemetry-nodejs-0_11_0:1'
+    );
+
+    new lambda.Function(this, 'MyFunction', {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('function.zip'),
+      layers: [otelLayer],
+      environment: {
+        AWS_LAMBDA_EXEC_WRAPPER:      '/opt/otel-handler',
+        OTEL_EXPORTER_OTLP_PROTOCOL:  'http/protobuf',
+        OTEL_EXPORTER_OTLP_ENDPOINT:  'https://app.trace0hq.com/api',
+        OTEL_EXPORTER_OTLP_HEADERS:   `X-API-KEY=${apiKey}`,
+      },
+    });
+    ```
+  </Tab>
+  <Tab title="GCP Cloud Functions">
+    <Note>
+      GCP Cloud Functions does not use Lambda layers. Add the OpenTelemetry packages to your `package.json` and initialise the SDK at the top of your entry file.
+    </Note>
+
+    ```bash
+    npm install \
+      @opentelemetry/sdk-node \
+      @opentelemetry/auto-instrumentations-node \
+      @opentelemetry/exporter-trace-otlp-http
+    ```
+
+    ```hcl
+    resource "google_cloudfunctions2_function" "app" {
+      name     = "my-node-function"
+      location = "us-central1"
+
+      build_config {
+        runtime     = "nodejs22"
+        entry_point = "handler"
+        source {
+          storage_source {
+            bucket = google_storage_bucket.source.name
+            object = google_storage_bucket_object.source.name
+          }
+        }
+      }
+
+      service_config {
+        environment_variables = {
+          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
+          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+        }
+        secret_environment_variables {
+          key        = "OTEL_EXPORTER_OTLP_HEADERS"
+          project_id = var.project_id
+          secret     = google_secret_manager_secret.trace0_api_key.secret_id
+          version    = "latest"
+        }
+      }
+    }
+    ```
+
+    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+  </Tab>
+</Tabs>

@@ -1,0 +1,251 @@
+---
+title: Java Spring Boot
+description: Instrument a Spring Boot application with OpenTelemetry and send traces, metrics, and logs to Trace0.
+---
+
+<Note>
+  This guide covers Spring Boot applications running on **ECS**, **EC2**, **Kubernetes**, or any container/VM environment. For AWS Lambda, see the [Java Lambda guide](/setup/java/lambda).
+</Note>
+
+## 1. Add the OpenTelemetry Spring Boot Starter
+
+Follow the [official getting started guide](https://opentelemetry.io/docs/zero-code/java/spring-boot-starter/getting-started/) and add the dependency to your project:
+
+<CodeGroup>
+
+```xml pom.xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-instrumentation-bom</artifactId>
+      <version>2.14.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+
+<dependencies>
+  <dependency>
+    <groupId>io.opentelemetry.instrumentation</groupId>
+    <artifactId>opentelemetry-spring-boot-starter</artifactId>
+  </dependency>
+</dependencies>
+```
+
+```groovy build.gradle
+dependencyManagement {
+  imports {
+    mavenBom "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.14.0"
+  }
+}
+
+dependencies {
+  implementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
+}
+```
+
+</CodeGroup>
+
+## 2. Set the Trace0 Endpoints
+
+Add these properties to your `application.properties` (or set them as environment variables). Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
+
+```properties
+management.opentelemetry.tracing.export.otlp.endpoint=https://app.trace0hq.com/api/v1/traces
+management.otlp.metrics.export.url=https://app.trace0hq.com/api/v1/metrics
+management.opentelemetry.logging.export.otlp.endpoint=https://app.trace0hq.com/api/v1/logs
+management.opentelemetry.tracing.export.otlp.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+management.otlp.metrics.export.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+management.opentelemetry.logging.export.otlp.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+```
+
+## 3. Configure Your Infrastructure
+
+Add the environment variables to your deployment. Store the API key in your secrets manager and inject it at runtime — avoid hardcoding it.
+
+<Tabs>
+  <Tab title="CloudFormation">
+    ```yaml
+    Parameters:
+      Trace0ApiKey:
+        Type: String
+        NoEcho: true
+
+    Resources:
+      TaskDefinition:
+        Type: AWS::ECS::TaskDefinition
+        Properties:
+          Family: my-spring-app
+          NetworkMode: awsvpc
+          RequiresCompatibilities: [FARGATE]
+          ContainerDefinitions:
+            - Name: app
+              Image: !Ref ImageUri
+              Environment:
+                - Name: management.opentelemetry.tracing.export.otlp.endpoint
+                  Value: https://app.trace0hq.com/api/v1/traces
+                - Name: management.otlp.metrics.export.url
+                  Value: https://app.trace0hq.com/api/v1/metrics
+                - Name: management.opentelemetry.logging.export.otlp.endpoint
+                  Value: https://app.trace0hq.com/api/v1/logs
+                - Name: management.opentelemetry.tracing.export.otlp.headers.X-API-KEY
+                  Value: !Ref Trace0ApiKey
+                - Name: management.otlp.metrics.export.headers.X-API-KEY
+                  Value: !Ref Trace0ApiKey
+                - Name: management.opentelemetry.logging.export.otlp.headers.X-API-KEY
+                  Value: !Ref Trace0ApiKey
+    ```
+  </Tab>
+  <Tab title="Terraform">
+    ```hcl
+    variable "trace0_api_key" {
+      type      = string
+      sensitive = true
+    }
+
+    resource "aws_ecs_task_definition" "app" {
+      family                   = "my-spring-app"
+      network_mode             = "awsvpc"
+      requires_compatibilities = ["FARGATE"]
+
+      container_definitions = jsonencode([{
+        name  = "app"
+        image = var.image_uri
+
+        environment = [
+          { name = "management.opentelemetry.tracing.export.otlp.endpoint",        value = "https://app.trace0hq.com/api/v1/traces" },
+          { name = "management.otlp.metrics.export.url",                            value = "https://app.trace0hq.com/api/v1/metrics" },
+          { name = "management.opentelemetry.logging.export.otlp.endpoint",         value = "https://app.trace0hq.com/api/v1/logs" },
+          { name = "management.opentelemetry.tracing.export.otlp.headers.X-API-KEY", value = var.trace0_api_key },
+          { name = "management.otlp.metrics.export.headers.X-API-KEY",              value = var.trace0_api_key },
+          { name = "management.opentelemetry.logging.export.otlp.headers.X-API-KEY", value = var.trace0_api_key },
+        ]
+      }])
+    }
+    ```
+  </Tab>
+  <Tab title="CDK (TypeScript)">
+    ```typescript
+    import * as cdk from 'aws-cdk-lib';
+    import * as ecs from 'aws-cdk-lib/aws-ecs';
+    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+
+    const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
+      this, 'Trace0ApiKey', 'trace0/api-key'
+    );
+
+    const taskDef = new ecs.FargateTaskDefinition(this, 'AppTask');
+
+    taskDef.addContainer('app', {
+      image: ecs.ContainerImage.fromRegistry(imageUri),
+      environment: {
+        'management.opentelemetry.tracing.export.otlp.endpoint': 'https://app.trace0hq.com/api/v1/traces',
+        'management.otlp.metrics.export.url':                    'https://app.trace0hq.com/api/v1/metrics',
+        'management.opentelemetry.logging.export.otlp.endpoint': 'https://app.trace0hq.com/api/v1/logs',
+      },
+      secrets: {
+        'management.opentelemetry.tracing.export.otlp.headers.X-API-KEY': ecs.Secret.fromSecretsManager(apiKeySecret),
+        'management.otlp.metrics.export.headers.X-API-KEY':                ecs.Secret.fromSecretsManager(apiKeySecret),
+        'management.opentelemetry.logging.export.otlp.headers.X-API-KEY':  ecs.Secret.fromSecretsManager(apiKeySecret),
+      },
+    });
+    ```
+  </Tab>
+  <Tab title="GCP Cloud Run">
+    ```yaml
+    # cloud-run-service.yaml
+    apiVersion: serving.knative.dev/v1
+    kind: Service
+    metadata:
+      name: my-spring-app
+    spec:
+      template:
+        spec:
+          containers:
+            - image: gcr.io/MY_PROJECT/my-spring-app
+              env:
+                - name: management.opentelemetry.tracing.export.otlp.endpoint
+                  value: https://app.trace0hq.com/api/v1/traces
+                - name: management.otlp.metrics.export.url
+                  value: https://app.trace0hq.com/api/v1/metrics
+                - name: management.opentelemetry.logging.export.otlp.endpoint
+                  value: https://app.trace0hq.com/api/v1/logs
+                - name: management.opentelemetry.tracing.export.otlp.headers.X-API-KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: trace0-api-key
+                      key: latest
+                - name: management.otlp.metrics.export.headers.X-API-KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: trace0-api-key
+                      key: latest
+                - name: management.opentelemetry.logging.export.otlp.headers.X-API-KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: trace0-api-key
+                      key: latest
+    ```
+
+    Deploy with:
+    ```bash
+    gcloud run services replace cloud-run-service.yaml
+    ```
+
+    Or via Terraform:
+    ```hcl
+    resource "google_cloud_run_v2_service" "app" {
+      name     = "my-spring-app"
+      location = "us-central1"
+
+      template {
+        containers {
+          image = "gcr.io/my-project/my-spring-app"
+
+          env {
+            name  = "management.opentelemetry.tracing.export.otlp.endpoint"
+            value = "https://app.trace0hq.com/api/v1/traces"
+          }
+          env {
+            name  = "management.otlp.metrics.export.url"
+            value = "https://app.trace0hq.com/api/v1/metrics"
+          }
+          env {
+            name  = "management.opentelemetry.logging.export.otlp.endpoint"
+            value = "https://app.trace0hq.com/api/v1/logs"
+          }
+          env {
+            name = "management.opentelemetry.tracing.export.otlp.headers.X-API-KEY"
+            value_source {
+              secret_key_ref {
+                secret  = google_secret_manager_secret.trace0_api_key.secret_id
+                version = "latest"
+              }
+            }
+          }
+          env {
+            name = "management.otlp.metrics.export.headers.X-API-KEY"
+            value_source {
+              secret_key_ref {
+                secret  = google_secret_manager_secret.trace0_api_key.secret_id
+                version = "latest"
+              }
+            }
+          }
+          env {
+            name = "management.opentelemetry.logging.export.otlp.headers.X-API-KEY"
+            value_source {
+              secret_key_ref {
+                secret  = google_secret_manager_secret.trace0_api_key.secret_id
+                version = "latest"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>

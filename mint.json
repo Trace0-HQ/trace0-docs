@@ -1,0 +1,66 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Trace0",
+  "logo": {
+    "light": "/logo/Trace0_Logo.svg",
+    "dark": "/logo/Trace0_Logo.svg",
+    "href": "https://app.trace0hq.com"
+  },
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#6366f1",
+    "light": "#818cf8",
+    "dark": "#4f46e5",
+    "background": {
+      "light": "#ffffff",
+      "dark": "#0f172a"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Dashboard",
+      "url": "https://app.trace0hq.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Sign Up Free",
+    "url": "https://app.trace0hq.com/signup"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["getting-started/overview"]
+    },
+    {
+      "group": "Java / Kotlin",
+      "pages": [
+        "setup/java/spring-boot",
+        "setup/java/lambda"
+      ]
+    },
+    {
+      "group": "JavaScript / Node.js",
+      "pages": [
+        "setup/javascript/ecs",
+        "setup/javascript/lambda"
+      ]
+    },
+    {
+      "group": "Python",
+      "pages": [
+        "setup/python/ecs",
+        "setup/python/lambda"
+      ]
+    },
+    {
+      "group": "Go",
+      "pages": [
+        "setup/go/ecs",
+        "setup/go/lambda"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/trace0hq"
+  }
+}

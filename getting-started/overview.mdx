@@ -1,0 +1,33 @@
+---
+title: Getting Started
+description: Instrument your service with OpenTelemetry and start seeing traces, metrics, and logs in Trace0 within minutes.
+---
+
+<Steps>
+  <Step title="Create an environment and copy your API key">
+    Log in to the [Trace0 dashboard](https://app.trace0hq.com), create a new environment, and copy your API key. You'll need this key to authenticate your service with the Trace0 ingest endpoint.
+  </Step>
+  <Step title="Install the OpenTelemetry agent">
+    Install the OpenTelemetry agent for your service's language and runtime environment, then point it at the Trace0 ingest endpoint.
+
+    Choose your language to get started:
+
+    <CardGroup cols={2}>
+      <Card title="Java / Kotlin" icon="java" href="/setup/java/spring-boot">
+        Spring Boot, AWS Lambda, ECS, EC2, and more
+      </Card>
+      <Card title="JavaScript / Node.js" icon="js" href="/setup/javascript/ecs">
+        Node.js on ECS, Lambda, and more
+      </Card>
+      <Card title="Python" icon="python" href="/setup/python/ecs">
+        FastAPI, Django, Flask on ECS, Lambda, and more
+      </Card>
+      <Card title="Go" icon="code" href="/setup/go/ecs">
+        Go services on ECS, Lambda, and more
+      </Card>
+    </CardGroup>
+  </Step>
+  <Step title="Deploy and watch traces appear">
+    Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds. No collector to manage — Trace0 handles ingestion directly.
+  </Step>
+</Steps>

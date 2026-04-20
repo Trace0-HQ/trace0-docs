@@ -1,0 +1,178 @@
+---
+title: Node.js — ECS / EC2
+description: Instrument a Node.js application with OpenTelemetry and send traces, metrics, and logs to Trace0.
+---
+
+<Note>
+  This guide covers Node.js applications running on **ECS**, **EC2**, **Kubernetes**, or any container/VM environment. For AWS Lambda, see the [Node.js Lambda guide](/setup/javascript/lambda).
+</Note>
+
+## 1. Install the OpenTelemetry SDK
+
+```bash
+npm install \
+  @opentelemetry/sdk-node \
+  @opentelemetry/auto-instrumentations-node \
+  @opentelemetry/exporter-trace-otlp-http \
+  @opentelemetry/exporter-metrics-otlp-http \
+  @opentelemetry/exporter-logs-otlp-http
+```
+
+## 2. Create an Instrumentation Entry Point
+
+Create a file `instrumentation.js` (or `instrumentation.ts`) and require/import it **before** your application code — typically via the `--require` Node.js flag.
+
+```javascript instrumentation.js
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-http');
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
+const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
+const { SimpleLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+
+const sdk = new NodeSDK({
+  traceExporter: new OTLPTraceExporter(),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new OTLPMetricExporter(),
+  }),
+  logRecordProcessors: [new SimpleLogRecordProcessor(new OTLPLogExporter())],
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+
+sdk.start();
+```
+
+Start your app with:
+```bash
+node --require ./instrumentation.js app.js
+```
+
+## 3. Set the Trace0 Endpoints
+
+Add these environment variables to your service. Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=https://app.trace0hq.com/api
+OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+<Tip>
+  Setting `OTEL_EXPORTER_OTLP_ENDPOINT` to the base URL will automatically route traces to `/v1/traces`, metrics to `/v1/metrics`, and logs to `/v1/logs`.
+</Tip>
+
+## 4. Configure Your Infrastructure
+
+<Tabs>
+  <Tab title="CloudFormation">
+    ```yaml
+    Parameters:
+      Trace0ApiKey:
+        Type: String
+        NoEcho: true
+
+    Resources:
+      TaskDefinition:
+        Type: AWS::ECS::TaskDefinition
+        Properties:
+          Family: my-node-app
+          NetworkMode: awsvpc
+          RequiresCompatibilities: [FARGATE]
+          ContainerDefinitions:
+            - Name: app
+              Image: !Ref ImageUri
+              Environment:
+                - Name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  Value: https://app.trace0hq.com/api
+                - Name: OTEL_EXPORTER_OTLP_PROTOCOL
+                  Value: http/protobuf
+                - Name: OTEL_EXPORTER_OTLP_HEADERS
+                  Value: !Sub "X-API-KEY=${Trace0ApiKey}"
+    ```
+  </Tab>
+  <Tab title="Terraform">
+    ```hcl
+    variable "trace0_api_key" {
+      type      = string
+      sensitive = true
+    }
+
+    resource "aws_ecs_task_definition" "app" {
+      family                   = "my-node-app"
+      network_mode             = "awsvpc"
+      requires_compatibilities = ["FARGATE"]
+
+      container_definitions = jsonencode([{
+        name  = "app"
+        image = var.image_uri
+
+        environment = [
+          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "https://app.trace0hq.com/api" },
+          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+          { name = "OTEL_EXPORTER_OTLP_HEADERS",  value = "X-API-KEY=${var.trace0_api_key}" },
+        ]
+      }])
+    }
+    ```
+  </Tab>
+  <Tab title="CDK (TypeScript)">
+    ```typescript
+    import * as ecs from 'aws-cdk-lib/aws-ecs';
+    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+
+    const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
+      this, 'Trace0ApiKey', 'trace0/api-key'
+    );
+
+    const taskDef = new ecs.FargateTaskDefinition(this, 'AppTask');
+
+    taskDef.addContainer('app', {
+      image: ecs.ContainerImage.fromRegistry(imageUri),
+      environment: {
+        OTEL_EXPORTER_OTLP_ENDPOINT: 'https://app.trace0hq.com/api',
+        OTEL_EXPORTER_OTLP_PROTOCOL: 'http/protobuf',
+      },
+      secrets: {
+        OTEL_EXPORTER_OTLP_HEADERS: ecs.Secret.fromSecretsManager(apiKeySecret),
+      },
+    });
+    ```
+
+    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+  </Tab>
+  <Tab title="GCP Cloud Run">
+    ```hcl
+    resource "google_cloud_run_v2_service" "app" {
+      name     = "my-node-app"
+      location = "us-central1"
+
+      template {
+        containers {
+          image = "gcr.io/my-project/my-node-app"
+
+          env {
+            name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value = "https://app.trace0hq.com/api"
+          }
+          env {
+            name  = "OTEL_EXPORTER_OTLP_PROTOCOL"
+            value = "http/protobuf"
+          }
+          env {
+            name = "OTEL_EXPORTER_OTLP_HEADERS"
+            value_source {
+              secret_key_ref {
+                secret  = google_secret_manager_secret.trace0_api_key.secret_id
+                version = "latest"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+  </Tab>
+</Tabs>
