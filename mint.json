@@ -28,6 +28,10 @@
   },
   "navigation": [
     {
+      "group": "Introduction",
+      "pages": ["introduction/what-is-trace0"]
+    },
+    {
       "group": "Getting Started",
       "pages": ["getting-started/overview"]
     },

@@ -11,13 +11,19 @@
   "navigation": {
     "groups": [
       {
+        "group": "Introduction",
+        "pages": [
+          "introduction/what-is-trace0"
+        ]
+      },
+      {
         "group": "Getting Started",
         "pages": [
           "getting-started/overview"
         ]
       },
       {
-        "group": "Language Guides",
+        "group": "Setup Guides",
         "pages": [
           {
             "group": "Java",
