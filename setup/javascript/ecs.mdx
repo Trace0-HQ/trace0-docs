@@ -1,5 +1,5 @@
 ---
-title: Node.js — ECS / EC2
+title: Node.js — Containers & VMs
 description: Instrument a Node.js application with OpenTelemetry and send traces, metrics, and logs to Trace0.
 ---
 
@@ -48,7 +48,7 @@ Start your app with:
 node --require ./instrumentation.js app.js
 ```
 
-## 3. Set the Trace0 Endpoints
+## 3. Set Environment Variables
 
 Add these environment variables to your service. Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
 
@@ -62,7 +62,11 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
   Setting `OTEL_EXPORTER_OTLP_ENDPOINT` to the base URL will automatically route traces to `/v1/traces`, metrics to `/v1/metrics`, and logs to `/v1/logs`.
 </Tip>
 
-## 4. Configure Your Infrastructure
+## 4. Deploy Service
+Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
+
+## Sample Code
+See Infrastructure as Code (IaC) examples below for adding the Trace0 environment variables to your service:
 
 <Tabs>
   <Tab title="CloudFormation">

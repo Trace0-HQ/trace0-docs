@@ -1,5 +1,5 @@
 ---
-title: Python — ECS / EC2
+title: Python — Containers & VMs
 description: Instrument a Python application with OpenTelemetry and send traces, metrics, and logs to Trace0.
 ---
 
@@ -16,7 +16,7 @@ opentelemetry-bootstrap -a install
 
 `opentelemetry-bootstrap` automatically detects your installed packages (Flask, Django, FastAPI, SQLAlchemy, etc.) and installs the matching instrumentation libraries.
 
-## 2. Set the Trace0 Endpoints
+## 2. Set Environment Variables
 
 Add these environment variables to your service. Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
 
@@ -34,7 +34,11 @@ opentelemetry-instrument python app.py
 opentelemetry-instrument gunicorn app:app
 ```
 
-## 3. Configure Your Infrastructure
+## 3. Deploy Service
+Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
+
+## Sample Code
+See Infrastructure as Code (IaC) examples below for adding the Trace0 environment variables to your service:
 
 <Tabs>
   <Tab title="CloudFormation">

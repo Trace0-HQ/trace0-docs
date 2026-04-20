@@ -48,7 +48,7 @@ dependencies {
 
 </CodeGroup>
 
-## 2. Set the Trace0 Endpoints
+## 2. Set Environment Variables
 
 Add these properties to your `application.properties` (or set them as environment variables). Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
 
@@ -61,9 +61,12 @@ management.otlp.metrics.export.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
 management.opentelemetry.logging.export.otlp.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
 ```
 
-## 3. Configure Your Infrastructure
+## 3. Deploy Service
+Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
 
-Add the environment variables to your deployment. Store the API key in your secrets manager and inject it at runtime — avoid hardcoding it.
+## Sample Code
+
+See Infrastructure as Code (IaC) examples below for adding the Trace0 environment variables to your service:
 
 <Tabs>
   <Tab title="CloudFormation">

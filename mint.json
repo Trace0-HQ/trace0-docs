@@ -32,31 +32,36 @@
       "pages": ["getting-started/overview"]
     },
     {
-      "group": "Java / Kotlin",
+      "group": "Setup Guides",
       "pages": [
-        "setup/java/spring-boot",
-        "setup/java/lambda"
-      ]
-    },
-    {
-      "group": "JavaScript / Node.js",
-      "pages": [
-        "setup/javascript/ecs",
-        "setup/javascript/lambda"
-      ]
-    },
-    {
-      "group": "Python",
-      "pages": [
-        "setup/python/ecs",
-        "setup/python/lambda"
-      ]
-    },
-    {
-      "group": "Go",
-      "pages": [
-        "setup/go/ecs",
-        "setup/go/lambda"
+        {
+          "group": "Java",
+          "pages": [
+            "setup/java/spring-boot",
+            "setup/java/lambda"
+          ]
+        },
+        {
+          "group": "JavaScript / Node.js",
+          "pages": [
+            "setup/javascript/ecs",
+            "setup/javascript/lambda"
+          ]
+        },
+        {
+          "group": "Python",
+          "pages": [
+            "setup/python/ecs",
+            "setup/python/lambda"
+          ]
+        },
+        {
+          "group": "Go",
+          "pages": [
+            "setup/go/ecs",
+            "setup/go/lambda"
+          ]
+        }
       ]
     }
   ],
