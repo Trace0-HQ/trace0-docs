@@ -1,0 +1,95 @@
+---
+title: Security
+description: How Trace0 protects your data.
+---
+
+Security and data protection are fundamental to how Trace0 is designed and operated. We understand that observability data may contain sensitive operational and application information, and we treat it accordingly.
+
+## Infrastructure & Hosting
+
+Trace0 is hosted on **Amazon Web Services (AWS)**, leveraging secure, managed cloud infrastructure designed for high availability, durability, and resilience.
+
+All production systems are deployed in isolated cloud environments with strict network controls and minimal exposure to the public internet.
+
+## Encryption
+
+### Encryption in Transit
+
+All data transmitted to and from Trace0 is encrypted using industry-standard **TLS 1.2+**.
+
+This includes:
+
+- Data ingestion endpoints
+- Web application traffic
+- Internal service-to-service communication
+
+Unencrypted connections are not permitted.
+
+### Encryption at Rest
+
+Customer data is encrypted at rest using strong encryption standards (AES-256) provided by AWS.
+
+Encryption covers:
+
+- Logs
+- Traces
+- Metrics
+- Metadata
+- Backups
+
+Encryption keys are securely managed using AWS.
+
+## Data Retention & Minimization
+
+Trace0 retains observability data for **30 days by default**.
+
+After the configured retention period:
+
+- Data is permanently deleted from active systems
+- No long-term archival copies are retained
+
+We believe in minimizing long-term data exposure and limiting the blast radius of any potential incident.
+
+## Access Control
+
+Access to production systems is restricted to authorized personnel only and granted on a least-privilege basis.
+
+We enforce:
+
+- Strong authentication controls
+- Role-based access within the application
+- Restricted administrative access to infrastructure
+- Logged and auditable production access
+
+## Data Isolation
+
+Customer data is logically isolated by account and environment.
+
+Access to one account does not grant access to another. All API access is authenticated and scoped to the requesting environment.
+
+## Application Security
+
+Trace0 follows modern secure development practices, including:
+
+- Code review before deployment
+- Infrastructure-as-code for reproducible environments
+- Segregation of production and non-production environments
+- Controlled deployment pipelines
+
+Security updates and patches are applied promptly to underlying infrastructure and dependencies.
+
+## Incident Response
+
+Trace0 maintains internal processes for identifying, responding to, and resolving security incidents.
+
+If a security event were to impact customer data, affected customers would be notified in accordance with applicable laws and contractual obligations.
+
+## Responsible Disclosure
+
+We welcome responsible disclosure of security vulnerabilities.
+
+Please contact **hello@trace0hq.com** — we will acknowledge receipt and investigate promptly.
+
+## Compliance Roadmap
+
+Trace0 is committed to evolving its security posture as the company grows and customer requirements expand. Formal compliance certifications are part of our long-term roadmap.

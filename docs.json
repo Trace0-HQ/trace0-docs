@@ -60,6 +60,10 @@
         "pages": ["pricing/pricing"]
       },
       {
+        "group": "Security",
+        "pages": ["security/security"]
+      },
+      {
         "group": "FAQ",
         "pages": ["faq/what-is-opentelemetry"]
       }
