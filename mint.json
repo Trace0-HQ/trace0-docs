@@ -71,6 +71,10 @@
     {
       "group": "Pricing",
       "pages": ["pricing/pricing"]
+    },
+    {
+      "group": "FAQ",
+      "pages": ["faq/what-is-opentelemetry"]
     }
   ],
   "footerSocials": {

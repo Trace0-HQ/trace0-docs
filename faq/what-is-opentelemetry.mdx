@@ -1,0 +1,29 @@
+---
+title: What is OpenTelemetry?
+description: Learn what OpenTelemetry is and why Trace0 is built on it.
+---
+
+[OpenTelemetry](https://opentelemetry.io) (OTel) is an open-source observability framework maintained by the Cloud Native Computing Foundation (CNCF). It provides a single, standardised set of APIs, SDKs, and instrumentation libraries for collecting traces, metrics, and logs from your services.
+
+## Why OpenTelemetry?
+
+Before OpenTelemetry, every observability vendor had its own proprietary agent or SDK. Switching tools meant re-instrumenting your entire codebase. OpenTelemetry solves this by providing a vendor-neutral standard that any platform — including Trace0 — can receive data from.
+
+<CardGroup cols={2}>
+  <Card title="Open standard" icon="globe">
+    OpenTelemetry is governed by the CNCF and supported by every major cloud provider and observability vendor. Your instrumentation is never locked to a single tool.
+  </Card>
+  <Card title="Rich ecosystem" icon="puzzle-piece">
+    Libraries exist for every major language and framework. Most popular frameworks (Spring Boot, Express, Django, FastAPI, and more) are auto-instrumented with zero code changes.
+  </Card>
+  <Card title="Traces, metrics & logs" icon="layer-group">
+    A single SDK captures all three telemetry signals — no need for separate agents or integrations for each signal type.
+  </Card>
+  <Card title="Future-proof" icon="shield">
+    Because your code uses open-source instrumentation rather than proprietary agents, you can switch observability backends at any time without touching your application code.
+  </Card>
+</CardGroup>
+
+## Using OpenTelemetry with Trace0
+
+See the [Setup Guides](/setup/java/spring-boot) to get started.
