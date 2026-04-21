@@ -67,6 +67,10 @@
           ]
         }
       ]
+    },
+    {
+      "group": "Pricing",
+      "pages": ["pricing/pricing"]
     }
   ],
   "footerSocials": {

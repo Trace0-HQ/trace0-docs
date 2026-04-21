@@ -1,0 +1,22 @@
+---
+title: Pricing
+description: Simple, usage-based pricing with no surprises.
+---
+
+Trace0 uses simple, usage-based pricing. You pay **$0.60 per GB** of ingested data per month — nothing else. This includes 30-day retention and full access to all features. No seat fees, no per-service charges, no surprises.
+
+## How Usage Is Calculated
+
+Your bill is based on the volume of telemetry data (spans, logs, and metrics) sent to Trace0, at **$0.60 per GB per month**.
+
+<CardGroup cols={3}>
+  <Card title="Measured at ingestion" icon="arrow-right-to-bracket">
+    Usage is recorded at the point data arrives at the Trace0 ingest endpoint.
+  </Card>
+  <Card title="Before compression" icon="file-zipper">
+    The uncompressed payload size is used — not the size of any transport-layer compression.
+  </Card>
+  <Card title="After decoding protobuf" icon="binary">
+    Measurement is taken after the protobuf payload is decoded, reflecting the true data volume.
+  </Card>
+</CardGroup>
