@@ -50,15 +50,15 @@ dependencies {
 
 ## 2. Set Environment Variables
 
-Add these properties to your `application.properties` (or set them as environment variables). Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
+Add these properties to your `application.properties` (or set them as environment variables). Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
 
 ```properties
 management.opentelemetry.tracing.export.otlp.endpoint=https://app.trace0hq.com/api/v1/traces
 management.otlp.metrics.export.url=https://app.trace0hq.com/api/v1/metrics
 management.opentelemetry.logging.export.otlp.endpoint=https://app.trace0hq.com/api/v1/logs
-management.opentelemetry.tracing.export.otlp.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
-management.otlp.metrics.export.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
-management.opentelemetry.logging.export.otlp.headers.X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+management.opentelemetry.tracing.export.otlp.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
+management.otlp.metrics.export.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
+management.opentelemetry.logging.export.otlp.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 ```
 
 ## 3. Deploy Service

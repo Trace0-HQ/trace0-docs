@@ -13,14 +13,14 @@ Find the latest `layer-javaagent` ARN for your AWS region from the [opentelemetr
 
 ## 2. Set Environment Variables
 
-Add the following environment variables to your Lambda function. Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
+Add the following environment variables to your Lambda function. Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
 
 | Variable | Value |
 |---|---|
 | `AWS_LAMBDA_EXEC_WRAPPER` | See [handler table below](#choose-the-right-exec-wrapper) |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
-| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
 
 ### Choose the Right Exec Wrapper
 
@@ -179,6 +179,6 @@ See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Jav
     }
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
 </Tabs>

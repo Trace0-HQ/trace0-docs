@@ -50,11 +50,11 @@ node --require ./instrumentation.js app.js
 
 ## 3. Set Environment Variables
 
-Add these environment variables to your service. Replace `YOUR_TRACEAPP_ENV_API_KEY` with the API key from your Trace0 environment.
+Add these environment variables to your service. Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=https://app.trace0hq.com/api
-OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
@@ -143,7 +143,7 @@ See Infrastructure as Code (IaC) examples below for adding the Trace0 environmen
     });
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
   <Tab title="GCP Cloud Run">
     ```hcl
@@ -177,6 +177,6 @@ See Infrastructure as Code (IaC) examples below for adding the Trace0 environmen
     }
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
 </Tabs>

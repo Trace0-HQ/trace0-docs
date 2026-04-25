@@ -73,7 +73,7 @@ The SDK reads `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` aut
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=https://app.trace0hq.com/api
-OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY
+OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
@@ -158,7 +158,7 @@ See Infrastructure as Code (IaC) examples below for adding the Trace0 environmen
     });
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
   <Tab title="GCP Cloud Run">
     ```hcl
@@ -192,6 +192,6 @@ See Infrastructure as Code (IaC) examples below for adding the Trace0 environmen
     }
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
 </Tabs>

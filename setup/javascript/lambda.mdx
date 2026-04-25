@@ -16,9 +16,8 @@ Find the latest `layer-nodejs` ARN for your AWS region from the [opentelemetry-l
 | Variable | Value |
 |---|---|
 | `AWS_LAMBDA_EXEC_WRAPPER` | `/opt/otel-handler` |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
-| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
 
 ## 3. Deploy Service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
@@ -53,7 +52,6 @@ See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Nod
           Environment:
             Variables:
               AWS_LAMBDA_EXEC_WRAPPER:      /opt/otel-handler
-              OTEL_EXPORTER_OTLP_PROTOCOL:  http/protobuf
               OTEL_EXPORTER_OTLP_ENDPOINT:  https://app.trace0hq.com/api
               OTEL_EXPORTER_OTLP_HEADERS:   !Sub "X-API-KEY=${Trace0ApiKey}"
     ```
@@ -157,6 +155,6 @@ See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Nod
     }
     ```
 
-    Set the secret value to `X-API-KEY=YOUR_TRACEAPP_ENV_API_KEY`.
+    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
 </Tabs>
