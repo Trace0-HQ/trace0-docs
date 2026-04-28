@@ -11,7 +11,7 @@ description: Instrument a Node.js Lambda function with OpenTelemetry and send tr
 
 Find the latest `layer-nodejs` ARN for your AWS region from the [opentelemetry-lambda releases page](https://github.com/open-telemetry/opentelemetry-lambda/releases). Add the layer ARN to your function.
 
-## 2. Set Environment Variables
+## 2. Set environment variables
 
 | Variable | Value |
 |---|---|
@@ -19,142 +19,49 @@ Find the latest `layer-nodejs` ARN for your AWS region from the [opentelemetry-l
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
 
-## 3. Deploy Service
+
+## 3. Set HTTP request spans
+For lambdas triggered via API Gateway, the HTTP request attributes are not set automatically on the lambda invocation span by the OTel Lambda auto-instrumentation.
+Therefore, they need to be set manually in your lambda code handler.
+
+```typescript
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+
+export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  const { httpMethod, path, requestContext } = event;
+
+  //Set the http request method and route on the parent span.
+  const span = trace.getActiveSpan();
+  span?.setAttributes({
+    'http.request.method': event.httpMethod,
+    'http.route': event.path
+  });
+
+  //Process the request.
+  const result = processEvent(event)
+
+  // Set the HTTP response code and mark the span as failed for 4xx/5xx responses.
+  span?.setAttributes({ 'http.response.status_code': result.statusCode });
+  span?.setStatus({ code: result.statusCode < 400 ? SpanStatusCode.OK : SpanStatusCode.ERROR });
+
+  return result;
+}
+```
+
+## 4. Add Trace0 logger
+To correlate logs with traces in Trace0, the [@trace0/otel-logger](https://www.npmjs.com/package/@trace0/lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry Lambda layer for Node.js does not yet automatically bridge console output into the OTel Logs pipeline.
+```json
+"dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@trace0/lambda-otel-logger": "^1.0.3"
+}
+```
+
+## 5. Deploy service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
 
-## Sample Code
-See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Node.js Lambda Layer and Trace0 environment variables to your service:
-
-<Tabs>
-  <Tab title="CloudFormation">
-    ```yaml
-    Parameters:
-      OtelNodeLayerArn:
-        Type: String
-        Description: >
-          Node.js layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases
-      Trace0ApiKey:
-        Type: String
-        NoEcho: true
-
-    Resources:
-      MyFunction:
-        Type: AWS::Lambda::Function
-        Properties:
-          FunctionName: my-node-function
-          Runtime: nodejs22.x
-          Handler: index.handler
-          Code:
-            S3Bucket: !Ref DeploymentBucket
-            S3Key: function.zip
-          Layers:
-            - !Ref OtelNodeLayerArn
-          Environment:
-            Variables:
-              AWS_LAMBDA_EXEC_WRAPPER:      /opt/otel-handler
-              OTEL_EXPORTER_OTLP_ENDPOINT:  https://app.trace0hq.com/api
-              OTEL_EXPORTER_OTLP_HEADERS:   !Sub "X-API-KEY=${Trace0ApiKey}"
-    ```
-  </Tab>
-  <Tab title="Terraform">
-    ```hcl
-    variable "otel_node_layer_arn" {
-      type        = string
-      description = "Node.js layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases"
-    }
-
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "aws_lambda_function" "app" {
-      function_name = "my-node-function"
-      runtime       = "nodejs22.x"
-      handler       = "index.handler"
-      filename      = "function.zip"
-
-      layers = [var.otel_node_layer_arn]
-
-      environment {
-        variables = {
-          AWS_LAMBDA_EXEC_WRAPPER      = "/opt/otel-handler"
-          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
-          OTEL_EXPORTER_OTLP_HEADERS  = "X-API-KEY=${var.trace0_api_key}"
-        }
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="CDK (TypeScript)">
-    ```typescript
-    import * as lambda from 'aws-cdk-lib/aws-lambda';
-
-    // Find the latest layer ARN at:
-    // https://github.com/open-telemetry/opentelemetry-lambda/releases
-    const otelLayer = lambda.LayerVersion.fromLayerVersionArn(
-      this, 'OtelNodeLayer',
-      'arn:aws:lambda:us-east-1:184161586896:layer:opentelemetry-nodejs-0_11_0:1'
-    );
-
-    new lambda.Function(this, 'MyFunction', {
-      runtime: lambda.Runtime.NODEJS_22_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('function.zip'),
-      layers: [otelLayer],
-      environment: {
-        AWS_LAMBDA_EXEC_WRAPPER:      '/opt/otel-handler',
-        OTEL_EXPORTER_OTLP_PROTOCOL:  'http/protobuf',
-        OTEL_EXPORTER_OTLP_ENDPOINT:  'https://app.trace0hq.com/api',
-        OTEL_EXPORTER_OTLP_HEADERS:   `X-API-KEY=${apiKey}`,
-      },
-    });
-    ```
-  </Tab>
-  <Tab title="GCP Cloud Functions">
-    <Note>
-      GCP Cloud Functions does not use Lambda layers. Add the OpenTelemetry packages to your `package.json` and initialise the SDK at the top of your entry file.
-    </Note>
-
-    ```bash
-    npm install \
-      @opentelemetry/sdk-node \
-      @opentelemetry/auto-instrumentations-node \
-      @opentelemetry/exporter-trace-otlp-http
-    ```
-
-    ```hcl
-    resource "google_cloudfunctions2_function" "app" {
-      name     = "my-node-function"
-      location = "us-central1"
-
-      build_config {
-        runtime     = "nodejs22"
-        entry_point = "handler"
-        source {
-          storage_source {
-            bucket = google_storage_bucket.source.name
-            object = google_storage_bucket_object.source.name
-          }
-        }
-      }
-
-      service_config {
-        environment_variables = {
-          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
-          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-        }
-        secret_environment_variables {
-          key        = "OTEL_EXPORTER_OTLP_HEADERS"
-          project_id = var.project_id
-          secret     = google_secret_manager_secret.trace0_api_key.secret_id
-          version    = "latest"
-        }
-      }
-    }
-    ```
-
-    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
-  </Tab>
-</Tabs>
+## Example service
+See our [Node.js Lambda example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/node-js-lambda) for a working service you can deploy to your AWS account.
