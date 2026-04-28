@@ -1,6 +1,6 @@
 ---
 title: Node.js — AWS Lambda
-description: Instrument a Node.js Lambda function with OpenTelemetry and send traces to Trace0.
+description: Instrument a Node.js Lambda function with OpenTelemetry and send traces, logs and metrics to Trace0.
 ---
 
 <Note>
@@ -52,7 +52,7 @@ export const handler = async (
 ```
 
 ## 4. Add Trace0 logger
-To correlate logs with traces in Trace0, the [@trace0/otel-logger](https://www.npmjs.com/package/@trace0/lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry library for Node.js does not yet automatically bridge console output into the OTel Logs pipeline.
+To correlate logs with traces in Trace0, the [@trace0/lambda-otel-logger](https://www.npmjs.com/package/@trace0/lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry JavaScript library does not yet automatically bridge console output into the OTel Logs pipeline.
 ```json
 "dependencies": {
     "@opentelemetry/api": "^1.9.1",
