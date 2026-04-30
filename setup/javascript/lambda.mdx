@@ -40,8 +40,7 @@ export const handler = async (
     'http.route': event.path
   });
 
-  //Process the request.
-  const result = processEvent(event)
+  const result = await processEvent(event)
 
   // Set the HTTP response code and mark the span as failed for 4xx/5xx responses.
   span?.setAttributes({ 'http.response.status_code': result.statusCode });
@@ -53,12 +52,32 @@ export const handler = async (
 
 ## 4. Add Trace0 logger
 To correlate logs with traces in Trace0, the [@trace0/lambda-otel-logger](https://www.npmjs.com/package/@trace0/lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry JavaScript library does not yet automatically bridge console output into the OTel Logs pipeline.
+
+First, install the library:
+
 ```json
 "dependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@trace0/lambda-otel-logger": "^1.0.3"
 }
 ```
+
+Then add as the first import in your Lambda handler entry point, and call `flush()` at the end of every invocation:
+```typescript
+import '@trace0/lambda-otel-logger';
+import { flush } from '@trace0/lambda-otel-logger';
+
+export const handler = async (event: APIGatewayProxyEvent, context: Context) => {
+  try {
+    console.log(`Processing request with requestId: ${context.awsRequestId}`);
+    return await processEvent(event, context);
+  } finally {
+    await flush(); // always flush before Lambda freezes
+  }
+};
+```
+
+The library will now automatically capture all logging output, inject OTel trace context (traceId, spanId), and export the logs to the Trace0 ingest endpoint.
 
 ## 5. Deploy service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
