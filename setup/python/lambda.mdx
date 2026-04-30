@@ -1,6 +1,6 @@
 ---
 title: Python — AWS Lambda
-description: Instrument a Python Lambda function with OpenTelemetry and send traces to Trace0.
+description: Instrument a Python Lambda function with OpenTelemetry and send traces, logs and metrics to Trace0.
 ---
 
 <Note>
@@ -11,151 +11,75 @@ description: Instrument a Python Lambda function with OpenTelemetry and send tra
 
 Find the latest `layer-python` ARN for your AWS region from the [opentelemetry-lambda releases page](https://github.com/open-telemetry/opentelemetry-lambda/releases). Add the layer ARN to your function.
 
-## 2. Set Environment Variables
+## 2. Set environment variables
 
 | Variable | Value |
 |---|---|
-| `AWS_LAMBDA_EXEC_WRAPPER` | `/opt/otel-instrument` |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
+| `AWS_LAMBDA_EXEC_WRAPPER` | `/opt/otel-handler` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
 
-## 3. Deploy Service
+
+## 3. Set HTTP request spans
+For lambdas triggered via API Gateway, the HTTP request attributes are not set automatically on the lambda invocation span by the OTel Lambda auto-instrumentation.
+Therefore, they need to be set manually in your lambda code handler.
+
+```python
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
+
+def handler(event, context):
+  http_method = event.get('httpMethod', '')
+  path = event.get('path', '')
+
+  # Set the http request method and route on the parent span.
+  span = trace.get_current_span()
+  span.set_attributes({
+      'http.request.method': http_method,
+      'http.route': path,
+  })
+
+  result = process_event(event)
+
+  # Set the HTTP response code and mark the span as failed for 4xx/5xx responses.
+  status_code = result['statusCode']
+  span.set_attribute('http.response.status_code', status_code)
+  span.set_status(StatusCode.OK if status_code < 400 else StatusCode.ERROR)
+
+  return result;
+```
+
+## 4. Add Trace0 logger
+To correlate logs with traces in Trace0, the [trace0-lambda-otel-logger](https://pypi.org/project/trace0-lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry Python Logs SDK is currently in an experimental state,
+so the APIs within [opentelemetry.sdk._logs](https://opentelemetry-python.readthedocs.io/en/stable/sdk/_logs.html) are subject to change in minor/patch releases and make no backward compatibility guarantees at this time.
+
+First, install the library:
+
+```bash
+pip install trace0-lambda-otel-logger
+```
+
+Then add the library as the first import in your Lambda handler module, and call `flush()` at the end of every invocation:
+```python
+import trace0_lambda_otel_logger  # must be first
+from trace0_lambda_otel_logger import flush
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+def handler(event, context):
+    try:
+        logger.info(f"Processing request with requestId: {context.aws_request_id}")
+        return process_event(event, context)
+    finally:
+        flush()  # always flush before Lambda freezes
+```
+
+The library will now automatically capture all logging output, inject OTel trace context (traceId, spanId), and export the logs to the Trace0 ingest endpoint.
+
+## 5. Deploy service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
 
-## Sample Code
-See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Python Lambda Layer and Trace0 environment variables to your service:
-
-<Tabs>
-  <Tab title="CloudFormation">
-    ```yaml
-    Parameters:
-      OtelPythonLayerArn:
-        Type: String
-        Description: >
-          Python layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases
-      Trace0ApiKey:
-        Type: String
-        NoEcho: true
-
-    Resources:
-      MyFunction:
-        Type: AWS::Lambda::Function
-        Properties:
-          FunctionName: my-python-function
-          Runtime: python3.13
-          Handler: handler.lambda_handler
-          Code:
-            S3Bucket: !Ref DeploymentBucket
-            S3Key: function.zip
-          Layers:
-            - !Ref OtelPythonLayerArn
-          Environment:
-            Variables:
-              AWS_LAMBDA_EXEC_WRAPPER:      /opt/otel-instrument
-              OTEL_EXPORTER_OTLP_PROTOCOL:  http/protobuf
-              OTEL_EXPORTER_OTLP_ENDPOINT:  https://app.trace0hq.com/api
-              OTEL_EXPORTER_OTLP_HEADERS:   !Sub "X-API-KEY=${Trace0ApiKey}"
-    ```
-  </Tab>
-  <Tab title="Terraform">
-    ```hcl
-    variable "otel_python_layer_arn" {
-      type        = string
-      description = "Python layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases"
-    }
-
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "aws_lambda_function" "app" {
-      function_name = "my-python-function"
-      runtime       = "python3.13"
-      handler       = "handler.lambda_handler"
-      filename      = "function.zip"
-
-      layers = [var.otel_python_layer_arn]
-
-      environment {
-        variables = {
-          AWS_LAMBDA_EXEC_WRAPPER      = "/opt/otel-instrument"
-          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
-          OTEL_EXPORTER_OTLP_HEADERS  = "X-API-KEY=${var.trace0_api_key}"
-        }
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="CDK (TypeScript)">
-    ```typescript
-    import * as lambda from 'aws-cdk-lib/aws-lambda';
-
-    // Find the latest layer ARN at:
-    // https://github.com/open-telemetry/opentelemetry-lambda/releases
-    const otelLayer = lambda.LayerVersion.fromLayerVersionArn(
-      this, 'OtelPythonLayer',
-      'arn:aws:lambda:us-east-1:184161586896:layer:opentelemetry-python-0_11_0:1'
-    );
-
-    new lambda.Function(this, 'MyFunction', {
-      runtime: lambda.Runtime.PYTHON_3_13,
-      handler: 'handler.lambda_handler',
-      code: lambda.Code.fromAsset('function.zip'),
-      layers: [otelLayer],
-      environment: {
-        AWS_LAMBDA_EXEC_WRAPPER:      '/opt/otel-instrument',
-        OTEL_EXPORTER_OTLP_PROTOCOL:  'http/protobuf',
-        OTEL_EXPORTER_OTLP_ENDPOINT:  'https://app.trace0hq.com/api',
-        OTEL_EXPORTER_OTLP_HEADERS:   `X-API-KEY=${apiKey}`,
-      },
-    });
-    ```
-  </Tab>
-  <Tab title="GCP Cloud Functions">
-    <Note>
-      GCP Cloud Functions does not use Lambda layers. Add the OpenTelemetry packages to your `requirements.txt` and initialise the SDK at import time.
-    </Note>
-
-    ```bash requirements.txt
-    opentelemetry-distro
-    opentelemetry-exporter-otlp
-    opentelemetry-instrumentation-flask
-    ```
-
-    ```hcl
-    resource "google_cloudfunctions2_function" "app" {
-      name     = "my-python-function"
-      location = "us-central1"
-
-      build_config {
-        runtime     = "python313"
-        entry_point = "handler"
-        source {
-          storage_source {
-            bucket = google_storage_bucket.source.name
-            object = google_storage_bucket_object.source.name
-          }
-        }
-      }
-
-      service_config {
-        environment_variables = {
-          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
-          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-        }
-        secret_environment_variables {
-          key        = "OTEL_EXPORTER_OTLP_HEADERS"
-          project_id = var.project_id
-          secret     = google_secret_manager_secret.trace0_api_key.secret_id
-          version    = "latest"
-        }
-      }
-    }
-    ```
-
-    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
-  </Tab>
-</Tabs>
+## Example service
+See our [Python Lambda example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/python-lambda) for a working service you can deploy to your AWS account.
