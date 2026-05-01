@@ -45,13 +45,6 @@
               "setup/python/ecs",
               "setup/python/lambda"
             ]
-          },
-          {
-            "group": "Go",
-            "pages": [
-              "setup/go/ecs",
-              "setup/go/lambda"
-            ]
           }
         ]
       },
