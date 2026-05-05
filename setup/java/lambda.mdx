@@ -4,12 +4,12 @@ description: Instrument a Java Lambda function with OpenTelemetry and send trace
 ---
 
 <Note>
-  You only need to add the **JavaWrapper layer** — no separate collector layer is required. Trace0 handles ingestion directly.
+  You only need to add the **JavaAgent layer** — no separate collector layer is required. Trace0 handles ingestion directly.
 </Note>
 
 ## 1. Add the OpenTelemetry Lambda Layer
 
-Find the latest `layer-javaagent` ARN for your AWS region from the [opentelemetry-lambda releases page](https://github.com/open-telemetry/opentelemetry-lambda/releases). Add the **JavaWrapper** layer ARN to your function — do **not** add the Collector layer.
+Find the latest `layer-javaagent` ARN for your AWS region from the [opentelemetry-lambda releases page](https://github.com/open-telemetry/opentelemetry-lambda/releases). Add the **JavaAgent** layer ARN to your function — do **not** add the Collector layer.
 
 ## 2. Set Environment Variables
 
@@ -17,168 +17,72 @@ Add the following environment variables to your Lambda function. Replace `YOUR_T
 
 | Variable | Value |
 |---|---|
-| `AWS_LAMBDA_EXEC_WRAPPER` | See [handler table below](#choose-the-right-exec-wrapper) |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
+| `AWS_LAMBDA_EXEC_WRAPPER` | `/opt/otel-handler` |
 
-### Choose the Right Exec Wrapper
+## 3. Set HTTP request spans
+For lambdas triggered via API Gateway, the HTTP request and response attributes are not set automatically on the lambda invocation span by the OTel Lambda auto-instrumentation.
+Therefore, they need to be set manually in your lambda code handler.
 
-The value of `AWS_LAMBDA_EXEC_WRAPPER` depends on how your function is triggered. See the [opentelemetry-lambda Java README](https://github.com/open-telemetry/opentelemetry-lambda/blob/main/java/README.md) for full details.
-
-| Trigger | `AWS_LAMBDA_EXEC_WRAPPER` value |
-|---|---|
-| API Gateway (proxy integration) | `/opt/otel-proxy-handler` |
-| SQS | `/opt/otel-sqs-handler` |
-| Streaming (`RequestStreamHandler`) | `/opt/otel-stream-handler` |
-| All other triggers (EventBridge, S3, SNS, etc.) | `/opt/otel-handler` — use the **JavaAgent** layer ARN |
-
-## 3. Deploy Service
-Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
-
-## Sample Code
-See Infrastructure as Code (IaC) examples below for adding the OpenTelemetry Java Lambda Layer and Trace0 environment variables to your service:
+First, add the `opentelemetry-api` dependency to your project:
 
 <Tabs>
-  <Tab title="CloudFormation">
-    ```yaml
-    Parameters:
-      OtelJavaLayerArn:
-        Type: String
-        Description: >
-          JavaWrapper layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases
-          e.g. arn:aws:lambda:us-east-1:184161586896:layer:opentelemetry-javaagent-0_11_0:1
-      Trace0ApiKey:
-        Type: String
-        NoEcho: true
-
-    Resources:
-      MyFunction:
-        Type: AWS::Lambda::Function
-        Properties:
-          FunctionName: my-java-function
-          Runtime: java21
-          Handler: com.example.Handler::handleRequest
-          Code:
-            S3Bucket: !Ref DeploymentBucket
-            S3Key: function.jar
-          Layers:
-            - !Ref OtelJavaLayerArn
-          Environment:
-            Variables:
-              AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-proxy-handler
-              OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-              OTEL_EXPORTER_OTLP_ENDPOINT: https://app.trace0hq.com/api
-              OTEL_EXPORTER_OTLP_HEADERS: !Sub "X-API-KEY=${Trace0ApiKey}"
-    ```
-  </Tab>
-  <Tab title="Terraform">
-    ```hcl
-    variable "otel_java_layer_arn" {
-      type        = string
-      description = "JavaWrapper layer ARN from https://github.com/open-telemetry/opentelemetry-lambda/releases"
-    }
-
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "aws_lambda_function" "app" {
-      function_name = "my-java-function"
-      runtime       = "java21"
-      handler       = "com.example.Handler::handleRequest"
-      filename      = "function.jar"
-
-      layers = [var.otel_java_layer_arn]
-
-      environment {
-        variables = {
-          AWS_LAMBDA_EXEC_WRAPPER       = "/opt/otel-proxy-handler"
-          OTEL_EXPORTER_OTLP_PROTOCOL  = "http/protobuf"
-          OTEL_EXPORTER_OTLP_ENDPOINT  = "https://app.trace0hq.com/api"
-          OTEL_EXPORTER_OTLP_HEADERS   = "X-API-KEY=${var.trace0_api_key}"
-        }
-      }
+  <Tab title="Gradle">
+    ```kotlin
+    dependencies {
+        implementation("io.opentelemetry:opentelemetry-api:1.61.0")
     }
     ```
   </Tab>
-  <Tab title="CDK (TypeScript)">
-    ```typescript
-    import * as cdk from 'aws-cdk-lib';
-    import * as lambda from 'aws-cdk-lib/aws-lambda';
-    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-
-    // Find the latest layer ARN at:
-    // https://github.com/open-telemetry/opentelemetry-lambda/releases
-    const otelLayer = lambda.LayerVersion.fromLayerVersionArn(
-      this, 'OtelJavaLayer',
-      'arn:aws:lambda:us-east-1:184161586896:layer:opentelemetry-javaagent-0_11_0:1'
-    );
-
-    const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
-      this, 'Trace0ApiKey', 'trace0/api-key'
-    );
-
-    new lambda.Function(this, 'MyFunction', {
-      runtime: lambda.Runtime.JAVA_21,
-      handler: 'com.example.Handler::handleRequest',
-      code: lambda.Code.fromAsset('function.jar'),
-      layers: [otelLayer],
-      environment: {
-        AWS_LAMBDA_EXEC_WRAPPER:      '/opt/otel-proxy-handler',
-        OTEL_EXPORTER_OTLP_PROTOCOL:  'http/protobuf',
-        OTEL_EXPORTER_OTLP_ENDPOINT:  'https://app.trace0hq.com/api',
-        OTEL_EXPORTER_OTLP_HEADERS:   `X-API-KEY=${apiKeySecret.secretValue.unsafeUnwrap()}`,
-      },
-    });
+  <Tab title="Maven">
+    ```xml
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
+      <version>1.61.0</version>
+      <scope>runtime</scope>
+    </dependency>
     ```
-  </Tab>
-  <Tab title="GCP Cloud Functions">
-    <Note>
-      GCP Cloud Functions does not use Lambda layers. Instead, include the OpenTelemetry Java agent JAR in your deployment and configure it via environment variables.
-    </Note>
-
-    Download the [opentelemetry-javaagent.jar](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases) and include it in your function package, then set:
-
-    ```hcl
-    # Terraform — GCP Cloud Functions (2nd gen)
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "google_cloudfunctions2_function" "app" {
-      name     = "my-java-function"
-      location = "us-central1"
-
-      build_config {
-        runtime     = "java21"
-        entry_point = "com.example.Handler"
-        source {
-          storage_source {
-            bucket = google_storage_bucket.source.name
-            object = google_storage_bucket_object.source.name
-          }
-        }
-      }
-
-      service_config {
-        environment_variables = {
-          JAVA_TOOL_OPTIONS            = "-javaagent:opentelemetry-javaagent.jar"
-          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-          OTEL_EXPORTER_OTLP_ENDPOINT = "https://app.trace0hq.com/api"
-        }
-        secret_environment_variables {
-          key        = "OTEL_EXPORTER_OTLP_HEADERS"
-          project_id = var.project_id
-          secret     = google_secret_manager_secret.trace0_api_key.secret_id
-          version    = "latest"
-        }
-      }
-    }
-    ```
-
-    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
   </Tab>
 </Tabs>
+
+Then add the HTTP request and response attributes to the Lambda invocation span in your handler:
+
+```java
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+
+public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    @Override
+    public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
+        String httpMethod = event.getHttpMethod();
+        String path = event.getPath();
+
+        // Set the http request method and route on the parent span.
+        Span span = Span.current();
+        span.setAttribute("http.request.method", httpMethod);
+        span.setAttribute("http.route", path);
+
+        APIGatewayProxyResponseEvent result = processRequest(event)
+
+        // Set the HTTP response code and mark the span as failed for 4xx/5xx responses.
+        span.setAttribute("http.response.status_code", result.getStatusCode());
+        span.setStatus(result.getStatusCode() < 400 ? StatusCode.OK : StatusCode.ERROR);
+        
+        return result;
+    }
+}
+```
+
+## 4. Deploy service
+Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
+
+## Example service
+See our [Java Lambda example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/java-lambda) for a working service you can deploy to your AWS account.

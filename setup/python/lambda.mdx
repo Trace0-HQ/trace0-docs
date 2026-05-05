@@ -21,7 +21,7 @@ Find the latest `layer-python` ARN for your AWS region from the [opentelemetry-l
 
 
 ## 3. Set HTTP request spans
-For lambdas triggered via API Gateway, the HTTP request attributes are not set automatically on the lambda invocation span by the OTel Lambda auto-instrumentation.
+For lambdas triggered via API Gateway, the HTTP request and response attributes are not set automatically on the lambda invocation span by the OTel Lambda auto-instrumentation.
 Therefore, they need to be set manually in your lambda code handler.
 
 ```python
