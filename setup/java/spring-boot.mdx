@@ -4,251 +4,141 @@ description: Instrument a Spring Boot application with OpenTelemetry and send tr
 ---
 
 <Note>
-  This guide covers Spring Boot applications running on **ECS**, **EC2**, **Kubernetes**, or any container/VM environment. For AWS Lambda, see the [Java Lambda guide](/setup/java/lambda).
+  This guide covers Spring Boot applications running on **ECS**, **EC2**, **Kubernetes**, or any container/VM environment. For Java on AWS Lambda, see the [Java Lambda guide](/setup/java/lambda).
 </Note>
+
+## Introduction
+You can instrument Spring Boot applications with OpenTelemetry using one of two approaches:
+
+1. **[OpenTelemetry Java Agent](https://opentelemetry.io/docs/zero-code/java/agent)** — uses bytecode instrumentation and provides the broadest out-of-the-box coverage, but has limitations around configuration and integration with other agents.
+
+2. **[OpenTelemetry Spring Boot Starter](https://spring.io/blog/2025/11/18/opentelemetry-with-spring-boot)** — our recommended approach for most Spring Boot applications. Choose this if any of the following apply:
+    - You are using Spring Boot Native Image, which the Java agent does not support
+    - The Java agent's startup overhead exceeds your requirements
+    - You are already using another Java monitoring agent, which may conflict with the OTel agent
+    - You want to configure OpenTelemetry via standard Spring Boot config files (`application.properties` / `application.yml`), which the Java agent does not read
+    - You want declarative configuration using a structured YAML format in `application.yaml`
+
+    The Spring Boot Starter has less out-of-the-box instrumentation than the Java agent. However, you can easily close this gap by adding standalone instrumentation libraries for the specific libraries/frameworks you want to instrument — see the [supported libraries list](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/docs/supported-libraries.md).
+
+The rest of this guide covers instrumentation using the OpenTelemetry Spring Boot Starter. For a deeper dive into how it works, see this [Spring blog post](https://spring.io/blog/2025/11/18/opentelemetry-with-spring-boot).
 
 ## 1. Add the OpenTelemetry Spring Boot Starter
 
-Follow the [official getting started guide](https://opentelemetry.io/docs/zero-code/java/spring-boot-starter/getting-started/) and add the dependency to your project:
+Add the following dependencies to your project:
 
 <CodeGroup>
 
-```xml pom.xml
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>io.opentelemetry.instrumentation</groupId>
-      <artifactId>opentelemetry-instrumentation-bom</artifactId>
-      <version>2.14.0</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
-
-<dependencies>
-  <dependency>
-    <groupId>io.opentelemetry.instrumentation</groupId>
-    <artifactId>opentelemetry-spring-boot-starter</artifactId>
-  </dependency>
-</dependencies>
+```groovy Gradle
+dependencies {
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}"))
+    
+    implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
+    implementation 'org.springframework.boot:spring-boot-starter-micrometer-metrics'
+    implementation('io.opentelemetry:opentelemetry-api')
+    implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:${opentelemetryVersion}"
+}
 ```
 
-```groovy build.gradle
-dependencyManagement {
-  imports {
-    mavenBom "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.14.0"
-  }
-}
+```xml Maven
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version><!-- your Spring Boot version --></version>
+</parent>
 
-dependencies {
-  implementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
-}
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-opentelemetry</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-micrometer-metrics</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-api</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry.instrumentation</groupId>
+        <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+</dependencies>
 ```
 
 </CodeGroup>
 
-## 2. Set Environment Variables
+## 2. Set Application Properties
 
-Add these properties to your `application.properties` (or set them as environment variables). Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
+Add these properties to your `application.properties` file. Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
 
 ```properties
 management.opentelemetry.tracing.export.otlp.endpoint=https://app.trace0hq.com/api/v1/traces
 management.otlp.metrics.export.url=https://app.trace0hq.com/api/v1/metrics
 management.opentelemetry.logging.export.otlp.endpoint=https://app.trace0hq.com/api/v1/logs
+
 management.opentelemetry.tracing.export.otlp.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 management.otlp.metrics.export.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 management.opentelemetry.logging.export.otlp.headers.X-API-KEY=YOUR_TRACE0_ENV_API_KEY
 ```
 
-## 3. Deploy Service
+## 3. Add Standalone Instrumentation Libraries
+As discussed above, the Spring Boot Starter does not instrument most libraries out of the box. To instrument additional libraries and frameworks, you need to add the 
+corresponding OpenTelemetry instrumentation libraries to your application. This ensures you receive spans from those libraries and gain full visibility into what is happening inside your application.
+
+The example below shows how to add instrumentation for the AWS SDK.
+
+<CodeGroup>
+
+```groovy Gradle
+dependencies {
+    implementation "io.opentelemetry.instrumentation:opentelemetry-aws-sdk-2.2:${opentelemetryVersion}"
+}
+```
+
+```xml Maven
+<dependency>
+    <groupId>io.opentelemetry.instrumentation</groupId>
+    <artifactId>opentelemetry-aws-sdk-2.2</artifactId>
+    <version>${opentelemetry.version}</version>
+</dependency>
+```
+</CodeGroup>
+
+See [here](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/docs/supported-libraries.md) for the full list of OpenTelemetry instrumentation libraries.
+
+The example service below includes the [AWS SDK instrumentation library](https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/aws-sdk/aws-sdk-2.2/library) and registers the `DynamoDB` client for instrumentation.
+
+## 4. Add a Global Exception Handler
+By default, unhandled exceptions in Spring Boot are caught by Spring's error handling mechanism after the OpenTelemetry trace context has closed. This means the error is never attached to the trace, making it invisible in the Trace0 trace.
+Adding a `@RestControllerAdvice` global exception handler ensures the exception is caught and logged within the active request trace, so the error and stack trace are correctly correlated to the right trace.
+
+```java
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handle(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal error");
+    }
+}
+```
+
+## 5. Deploy Service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
 
-## Sample Code
+## Example Service
 
-See Infrastructure as Code (IaC) examples below for adding the Trace0 environment variables to your service:
-
-<Tabs>
-  <Tab title="CloudFormation">
-    ```yaml
-    Parameters:
-      Trace0ApiKey:
-        Type: String
-        NoEcho: true
-
-    Resources:
-      TaskDefinition:
-        Type: AWS::ECS::TaskDefinition
-        Properties:
-          Family: my-spring-app
-          NetworkMode: awsvpc
-          RequiresCompatibilities: [FARGATE]
-          ContainerDefinitions:
-            - Name: app
-              Image: !Ref ImageUri
-              Environment:
-                - Name: management.opentelemetry.tracing.export.otlp.endpoint
-                  Value: https://app.trace0hq.com/api/v1/traces
-                - Name: management.otlp.metrics.export.url
-                  Value: https://app.trace0hq.com/api/v1/metrics
-                - Name: management.opentelemetry.logging.export.otlp.endpoint
-                  Value: https://app.trace0hq.com/api/v1/logs
-                - Name: management.opentelemetry.tracing.export.otlp.headers.X-API-KEY
-                  Value: !Ref Trace0ApiKey
-                - Name: management.otlp.metrics.export.headers.X-API-KEY
-                  Value: !Ref Trace0ApiKey
-                - Name: management.opentelemetry.logging.export.otlp.headers.X-API-KEY
-                  Value: !Ref Trace0ApiKey
-    ```
-  </Tab>
-  <Tab title="Terraform">
-    ```hcl
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "aws_ecs_task_definition" "app" {
-      family                   = "my-spring-app"
-      network_mode             = "awsvpc"
-      requires_compatibilities = ["FARGATE"]
-
-      container_definitions = jsonencode([{
-        name  = "app"
-        image = var.image_uri
-
-        environment = [
-          { name = "management.opentelemetry.tracing.export.otlp.endpoint",        value = "https://app.trace0hq.com/api/v1/traces" },
-          { name = "management.otlp.metrics.export.url",                            value = "https://app.trace0hq.com/api/v1/metrics" },
-          { name = "management.opentelemetry.logging.export.otlp.endpoint",         value = "https://app.trace0hq.com/api/v1/logs" },
-          { name = "management.opentelemetry.tracing.export.otlp.headers.X-API-KEY", value = var.trace0_api_key },
-          { name = "management.otlp.metrics.export.headers.X-API-KEY",              value = var.trace0_api_key },
-          { name = "management.opentelemetry.logging.export.otlp.headers.X-API-KEY", value = var.trace0_api_key },
-        ]
-      }])
-    }
-    ```
-  </Tab>
-  <Tab title="CDK (TypeScript)">
-    ```typescript
-    import * as cdk from 'aws-cdk-lib';
-    import * as ecs from 'aws-cdk-lib/aws-ecs';
-    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-
-    const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
-      this, 'Trace0ApiKey', 'trace0/api-key'
-    );
-
-    const taskDef = new ecs.FargateTaskDefinition(this, 'AppTask');
-
-    taskDef.addContainer('app', {
-      image: ecs.ContainerImage.fromRegistry(imageUri),
-      environment: {
-        'management.opentelemetry.tracing.export.otlp.endpoint': 'https://app.trace0hq.com/api/v1/traces',
-        'management.otlp.metrics.export.url':                    'https://app.trace0hq.com/api/v1/metrics',
-        'management.opentelemetry.logging.export.otlp.endpoint': 'https://app.trace0hq.com/api/v1/logs',
-      },
-      secrets: {
-        'management.opentelemetry.tracing.export.otlp.headers.X-API-KEY': ecs.Secret.fromSecretsManager(apiKeySecret),
-        'management.otlp.metrics.export.headers.X-API-KEY':                ecs.Secret.fromSecretsManager(apiKeySecret),
-        'management.opentelemetry.logging.export.otlp.headers.X-API-KEY':  ecs.Secret.fromSecretsManager(apiKeySecret),
-      },
-    });
-    ```
-  </Tab>
-  <Tab title="GCP Cloud Run">
-    ```yaml
-    # cloud-run-service.yaml
-    apiVersion: serving.knative.dev/v1
-    kind: Service
-    metadata:
-      name: my-spring-app
-    spec:
-      template:
-        spec:
-          containers:
-            - image: gcr.io/MY_PROJECT/my-spring-app
-              env:
-                - name: management.opentelemetry.tracing.export.otlp.endpoint
-                  value: https://app.trace0hq.com/api/v1/traces
-                - name: management.otlp.metrics.export.url
-                  value: https://app.trace0hq.com/api/v1/metrics
-                - name: management.opentelemetry.logging.export.otlp.endpoint
-                  value: https://app.trace0hq.com/api/v1/logs
-                - name: management.opentelemetry.tracing.export.otlp.headers.X-API-KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: trace0-api-key
-                      key: latest
-                - name: management.otlp.metrics.export.headers.X-API-KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: trace0-api-key
-                      key: latest
-                - name: management.opentelemetry.logging.export.otlp.headers.X-API-KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: trace0-api-key
-                      key: latest
-    ```
-
-    Deploy with:
-    ```bash
-    gcloud run services replace cloud-run-service.yaml
-    ```
-
-    Or via Terraform:
-    ```hcl
-    resource "google_cloud_run_v2_service" "app" {
-      name     = "my-spring-app"
-      location = "us-central1"
-
-      template {
-        containers {
-          image = "gcr.io/my-project/my-spring-app"
-
-          env {
-            name  = "management.opentelemetry.tracing.export.otlp.endpoint"
-            value = "https://app.trace0hq.com/api/v1/traces"
-          }
-          env {
-            name  = "management.otlp.metrics.export.url"
-            value = "https://app.trace0hq.com/api/v1/metrics"
-          }
-          env {
-            name  = "management.opentelemetry.logging.export.otlp.endpoint"
-            value = "https://app.trace0hq.com/api/v1/logs"
-          }
-          env {
-            name = "management.opentelemetry.tracing.export.otlp.headers.X-API-KEY"
-            value_source {
-              secret_key_ref {
-                secret  = google_secret_manager_secret.trace0_api_key.secret_id
-                version = "latest"
-              }
-            }
-          }
-          env {
-            name = "management.otlp.metrics.export.headers.X-API-KEY"
-            value_source {
-              secret_key_ref {
-                secret  = google_secret_manager_secret.trace0_api_key.secret_id
-                version = "latest"
-              }
-            }
-          }
-          env {
-            name = "management.opentelemetry.logging.export.otlp.headers.X-API-KEY"
-            value_source {
-              secret_key_ref {
-                secret  = google_secret_manager_secret.trace0_api_key.secret_id
-                version = "latest"
-              }
-            }
-          }
-        }
-      }
-    }
-    ```
-  </Tab>
-</Tabs>
+See our [Spring Boot example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/java-spring-boot) for a working service you can deploy to your AWS account.
