@@ -10,145 +10,34 @@ description: Instrument a Python application with OpenTelemetry and send traces,
 ## 1. Install the OpenTelemetry SDK
 
 ```bash
-pip install opentelemetry-distro opentelemetry-exporter-otlp
+pip install opentelemetry-distro 
+pip install opentelemetry-exporter-otlp
+pip install opentelemetry-instrumentation-system-metrics
+```
+
+## 2. Install Instrumentation Libraries
+
+```bash
 opentelemetry-bootstrap -a install
 ```
 
-`opentelemetry-bootstrap` automatically detects your installed packages (Flask, Django, FastAPI, SQLAlchemy, etc.) and installs the matching instrumentation libraries.
+`opentelemetry-bootstrap` automatically detects your installed packages (Django, FastAPI, Boto3, etc.) and installs the matching instrumentation libraries.
 
-## 2. Set Environment Variables
+## 3. Set Environment Variables
 
 Add these environment variables to your service. Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
 
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=https://app.trace0hq.com/api
-OTEL_EXPORTER_OTLP_HEADERS=X-API-KEY=YOUR_TRACE0_ENV_API_KEY
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-```
+| Variable | Value |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` |
+| `OTEL_PYTHON_LOG_CORRELATION` | `true` |
+| `OTEL_PYTHON_LOG_CODE_ATTRIBUTES` | `true` |
 
-Start your application with the `opentelemetry-instrument` wrapper — no code changes required:
 
-```bash
-opentelemetry-instrument python app.py
-# or for gunicorn:
-opentelemetry-instrument gunicorn app:app
-```
-
-## 3. Deploy Service
+## 4. Deploy Service
 Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
 
 ## Sample Code
-See Infrastructure as Code (IaC) examples below for adding the Trace0 environment variables to your service:
-
-<Tabs>
-  <Tab title="CloudFormation">
-    ```yaml
-    Parameters:
-      Trace0ApiKey:
-        Type: String
-        NoEcho: true
-
-    Resources:
-      TaskDefinition:
-        Type: AWS::ECS::TaskDefinition
-        Properties:
-          Family: my-python-app
-          NetworkMode: awsvpc
-          RequiresCompatibilities: [FARGATE]
-          ContainerDefinitions:
-            - Name: app
-              Image: !Ref ImageUri
-              Environment:
-                - Name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  Value: https://app.trace0hq.com/api
-                - Name: OTEL_EXPORTER_OTLP_PROTOCOL
-                  Value: http/protobuf
-                - Name: OTEL_EXPORTER_OTLP_HEADERS
-                  Value: !Sub "X-API-KEY=${Trace0ApiKey}"
-    ```
-  </Tab>
-  <Tab title="Terraform">
-    ```hcl
-    variable "trace0_api_key" {
-      type      = string
-      sensitive = true
-    }
-
-    resource "aws_ecs_task_definition" "app" {
-      family                   = "my-python-app"
-      network_mode             = "awsvpc"
-      requires_compatibilities = ["FARGATE"]
-
-      container_definitions = jsonencode([{
-        name  = "app"
-        image = var.image_uri
-
-        environment = [
-          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "https://app.trace0hq.com/api" },
-          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
-          { name = "OTEL_EXPORTER_OTLP_HEADERS",  value = "X-API-KEY=${var.trace0_api_key}" },
-        ]
-      }])
-    }
-    ```
-  </Tab>
-  <Tab title="CDK (TypeScript)">
-    ```typescript
-    import * as ecs from 'aws-cdk-lib/aws-ecs';
-    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-
-    const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
-      this, 'Trace0ApiKey', 'trace0/api-key'
-    );
-
-    const taskDef = new ecs.FargateTaskDefinition(this, 'AppTask');
-
-    taskDef.addContainer('app', {
-      image: ecs.ContainerImage.fromRegistry(imageUri),
-      environment: {
-        OTEL_EXPORTER_OTLP_ENDPOINT: 'https://app.trace0hq.com/api',
-        OTEL_EXPORTER_OTLP_PROTOCOL: 'http/protobuf',
-      },
-      secrets: {
-        OTEL_EXPORTER_OTLP_HEADERS: ecs.Secret.fromSecretsManager(apiKeySecret),
-      },
-    });
-    ```
-
-    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
-  </Tab>
-  <Tab title="GCP Cloud Run">
-    ```hcl
-    resource "google_cloud_run_v2_service" "app" {
-      name     = "my-python-app"
-      location = "us-central1"
-
-      template {
-        containers {
-          image = "gcr.io/my-project/my-python-app"
-
-          env {
-            name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value = "https://app.trace0hq.com/api"
-          }
-          env {
-            name  = "OTEL_EXPORTER_OTLP_PROTOCOL"
-            value = "http/protobuf"
-          }
-          env {
-            name = "OTEL_EXPORTER_OTLP_HEADERS"
-            value_source {
-              secret_key_ref {
-                secret  = google_secret_manager_secret.trace0_api_key.secret_id
-                version = "latest"
-              }
-            }
-          }
-        }
-      }
-    }
-    ```
-
-    Set the secret value to `X-API-KEY=YOUR_TRACE0_ENV_API_KEY`.
-  </Tab>
-</Tabs>
+See our [Python FastAPI EC2 example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/python-fast-api-ec2) for a working service you can deploy to your AWS account.
