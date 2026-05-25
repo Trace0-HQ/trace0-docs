@@ -50,8 +50,9 @@ def handler(event, context):
 ```
 
 ## 4. Add Trace0 logger
-To correlate logs with traces in Trace0, the [trace0-lambda-otel-logger](https://pypi.org/project/trace0-lambda-otel-logger) library must be installed in your Lambda function. This is necessary because the OpenTelemetry Python Logs SDK is currently in an experimental state,
-so the APIs within [opentelemetry.sdk._logs](https://opentelemetry-python.readthedocs.io/en/stable/sdk/_logs.html) are subject to change in minor/patch releases and make no backward compatibility guarantees at this time.
+The OpenTelemetry Lambda Layer does not include the `opentelemetry-instrumentation-logging` library. Adding it as a dependency pulls in `opentelemetry-sdk` and `opentelemetry-instrumentation` as transitive dependencies — both of which are already bundled in the layer — resulting in duplicate packages and potential version conflicts.
+
+The [trace0-lambda-otel-logger](https://pypi.org/project/trace0-lambda-otel-logger) library solves this problem by installing a `logging.Handler` on the root logger that automatically injects the active OTel span's `traceId` and `spanId` into every log record, and exporting them directly to the Trace0 ingest endpoint. This enables full log-trace correlation, while only depending on `opentelemetry-api`, which is already present in the layer, making it safe to install alongside it.
 
 First, install the library:
 
