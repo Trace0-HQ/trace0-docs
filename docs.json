@@ -35,14 +35,14 @@
           {
             "group": "JavaScript / Node.js",
             "pages": [
-              "setup/javascript/ecs",
+              "setup/javascript/containers-and-vms",
               "setup/javascript/lambda"
             ]
           },
           {
             "group": "Python",
             "pages": [
-              "setup/python/ecs",
+              "setup/python/containers-and-vms",
               "setup/python/lambda"
             ]
           }
