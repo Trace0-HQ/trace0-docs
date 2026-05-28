@@ -1,0 +1,38 @@
+---
+title: Java — Containers & VMs
+description: Instrument a Java application with OpenTelemetry and send traces, metrics, and logs to Trace0.
+---
+
+<Note>
+  This guide covers Java applications running on **ECS**, **EC2**, **Kubernetes**, or any container/VM environment. For Java on AWS Lambda, see the [Java Lambda guide](/setup/java/lambda).
+</Note>
+
+
+## 1. Install the OpenTelemetry Java Agent
+
+Download the latest `opentelemetry-javaagent.jar` from the [OpenTelemetry Java instrumentation releases](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases) and attach it to your JVM startup:
+```bash
+java -javaagent:path/to/opentelemetry-javaagent.jar -jar myapp.jar
+```
+
+Alternatively, if you are using `Gradle`, you can use the [Gradle Javaagent Plugin](https://github.com/ryandens/javaagent-gradle-plugin#opentelemetry-integration) to attach the agent to your application.
+
+For full configuration options, see the official [OpenTelemetry Java Agent docs](https://opentelemetry.io/docs/zero-code/java/agent/).
+
+## 2. Set Environment Variables
+
+Add the following environment variables to your application. Replace `YOUR_TRACE0_ENV_API_KEY` with the API key from your Trace0 environment.
+
+| Variable | Value |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://app.trace0hq.com/api` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `X-API-KEY=YOUR_TRACE0_ENV_API_KEY` |
+
+Alternatively, you can set these in a YAML file using [declarative configuration](https://opentelemetry.io/docs/zero-code/java/agent/declarative-configuration/).
+
+## 3. Deploy Service
+Deploy your service and watch traces, metrics, and logs appear in the [Trace0 dashboard](https://app.trace0hq.com) within seconds.
+
+## Example Service
+
+See our [Java EC2 example app](https://github.com/Trace0-HQ/trace0-examples/tree/main/java-javalin-ec2) for a working service you can deploy to your AWS account.

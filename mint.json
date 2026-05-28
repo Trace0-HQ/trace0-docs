@@ -41,6 +41,7 @@
         {
           "group": "Java",
           "pages": [
+            "setup/java/containers-and-vms",
             "setup/java/spring-boot",
             "setup/java/lambda"
           ]
