@@ -39,14 +39,26 @@ def handler(event, context):
       'http.route': path,
   })
 
-  result = process_event(event)
+  try:
+      result = process_event(event)
 
-  # Set the HTTP response code and mark the span as failed for 4xx/5xx responses.
-  status_code = result['statusCode']
-  span.set_attribute('http.response.status_code', status_code)
-  span.set_status(StatusCode.OK if status_code < 400 else StatusCode.ERROR)
+      # Set the HTTP response code and mark the parent span as failed for 4xx/5xx responses.
+      status_code = result['statusCode']
+      span.set_attribute('http.response.status_code', status_code)
+      span.set_status(StatusCode.OK if status_code < 400 else StatusCode.ERROR)
 
-  return result;
+      return result
+
+  except Exception as e:
+      # Set the exception, HTTP error code and status on the parent span.
+      span.record_exception(e)
+      span.set_attribute('http.response.status_code', 500)
+      span.set_status(StatusCode.ERROR)
+      return {
+          'statusCode': 500,
+          'headers': {'Content-Type': 'application/json'},
+          'body': json.dumps({'error': 'Internal server error'}),
+      }
 ```
 
 ## 4. Add Trace0 logger
