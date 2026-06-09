@@ -1,0 +1,79 @@
+---
+title: Transactions
+description: View and explore distributed traces across your services.
+---
+
+In Trace0, a `Transaction` represents a single end-to-end trace across all services involved in handling a request — such as an inbound HTTP request, a message consumed from a queue, etc.
+
+You can view the list of transactions for each of your services in the Transactions section:
+
+<img
+  className="block dark:hidden"
+  src="/images/transactions-light.png"
+  alt="Transactions Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/transactions-dark.png"
+  alt="Transactions Dark"
+/>
+
+### Filtering and Searching
+
+You can filter transactions by service, time period, or using the **Errors only** toggle.
+
+You can also search transactions by free text, returning any transactions where the search term appears in the transaction's log entries:
+
+TODO ADD images
+
+### Transaction Detail
+
+To view more details for a single transaction, click on it to see a full breakdown — including all spans, logs, and time taken across each component and service:
+
+<img
+  className="block dark:hidden"
+  src="/images/transaction-detail-flow-light.png"
+  alt="Transactions Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/transaction-detail-flow-dark.png"
+  alt="Transactions Dark"
+/>
+
+<img
+  className="block dark:hidden"
+  src="/images/transaction-detail-breakdown-light.png"
+  alt="Transactions Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/transaction-detail-breakdown-dark.png"
+  alt="Transactions Dark"
+/>
+
+<img
+  className="block dark:hidden"
+  src="/images/transaction-detail-service-breakdown-light.png"
+  alt="Transactions Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/transaction-detail-service-breakdown-dark.png"
+  alt="Transactions Dark"
+/>
+
+### Errors
+
+For transactions that fail, the transaction will appear as an error in Trace0, with the full error details and stack trace included:
+
+<img
+  className="block dark:hidden"
+  src="/images/transaction-error-light.png"
+  alt="Transactions Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/transaction-error-dark.png"
+  alt="Transactions Dark"
+/>

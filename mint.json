@@ -36,6 +36,15 @@
       "pages": ["getting-started/overview"]
     },
     {
+      "group": "Platform",
+      "pages": [
+        "platform/transactions",
+        "platform/logs",
+        "platform/metrics",
+        "platform/alerts"
+      ]
+    },
+    {
       "group": "Setup Guides",
       "pages": [
         {
