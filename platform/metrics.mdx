@@ -31,6 +31,67 @@ You can then click the `View more` link for any service to view detailed metrics
   alt="Metrics Dark"
 />
 
-### Supported Metrics
+### Displayed Metrics
 
-If you need another metric, please contact...
+We currently display the following metrics for each language/runtime. Metrics are displayed either as a single value or as a chart.
+
+<Tabs>
+  <Tab title="Java">
+    **Single Value**
+    | Metric | Unit |
+    |---|---|
+    | Request Count | Number |
+    | Requests per Second | Number |
+    | Request Latency P99 | Time (ms, s) |
+    | Error Rate | Percentage |
+    | Max Memory Used | Bytes (KB, MB, GB) |
+
+    **Chart**
+    | Metric | Description |
+    |---|---|
+    | Request Latency P99, P95, P90, P75, P50 | Latency percentile distribution |
+    | Requests & Errors | Request volume vs error volume |
+    | Errors | Error volume over time |
+    | Max Memory Used | Memory usage over time |
+    | Platform Thread Count | Number of JVM platform (OS) threads in use over time. Does not include virtual threads. |
+  </Tab>
+  <Tab title="JavaScript / Node.js">
+    #### Single Value
+    | Metric | Unit |
+    |---|---|
+    | Request Count | Number |
+    | Requests per Second | Number |
+    | Request Latency P99 | Time (ms, s) |
+    | Error Rate | Percentage |
+    | Max Memory Used | Bytes (KB, MB, GB) |
+
+    #### Chart
+    | Metric | Description |
+    |---|---|
+    | Request Latency P99, P95, P90, P75, P50 | Latency percentile distribution |
+    | Requests & Errors | Request volume vs error volume |
+    | Errors | Error volume over time |
+    | Max Memory Used | Memory usage over time |
+  </Tab>
+  <Tab title="Python">
+    #### Single Value
+    | Metric | Unit |
+    |---|---|
+    | Request Count | Number |
+    | Requests per Second | Number |
+    | Request Latency P99 | Time (ms, s) |
+    | Error Rate | Percentage |
+    | Max Memory Used | Bytes (KB, MB, GB) |
+
+    #### Chart
+    | Metric | Description |
+    |---|---|
+    | Request Latency P99, P95, P90, P75, P50 | Latency percentile distribution |
+    | Requests & Errors | Request volume vs error volume |
+    | Errors | Error volume over time |
+    | Max Memory Used | Memory usage over time |
+    | Thread Count | Number of OS threads in the Python process over time. |
+  </Tab>
+</Tabs>
+
+If you require other metrics to be displayed, please email [hello@trace0hq.com](mailto:hello@trace0hq.com) or message us in our live chat in the app.
