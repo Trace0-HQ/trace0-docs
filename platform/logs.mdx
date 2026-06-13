@@ -2,3 +2,35 @@
 title: Logs
 description: Search and explore logs across your services.
 ---
+
+You can view and analyze logs for each of your services in the [Logs](https://app.trace0hq.com/logs) section:
+
+<img
+  className="block dark:hidden"
+  src="/images/logs-light.png"
+  alt="Logs Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/logs-dark.png"
+  alt="Logs Dark"
+/>
+
+### Filtering and Searching
+
+You can then filter logs by service and time period.
+
+You can also search logs by free text, returning any log entry where the search term appears in the log entry:
+
+<img
+  className="block dark:hidden"
+  src="/images/logs-search-light.png"
+  alt="Logs Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/logs-search-dark.png"
+  alt="Logs Dark"
+/>
+
+Each matching log entry is displayed in the `Log entries` table and includes a link to the corresponding [Transaction](/platform/transactions). Click `View transaction` to open the transaction and see the full context of where the log entry occurred within the transaction.
