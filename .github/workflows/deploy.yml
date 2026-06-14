@@ -26,4 +26,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./out
           enable_jekyll: false
-          cname: docs.trace0.com
+          cname: docs.trace0hq.com
