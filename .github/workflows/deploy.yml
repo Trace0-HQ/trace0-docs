@@ -20,6 +20,15 @@ jobs:
       - name: Unzip export
         run: unzip export.zip -d out
 
+      - name: Install sitemap package
+        run: npm install sitemap
+
+      - name: Generate sitemap
+        run: node generate-sitemap.mjs
+
+      - name: Copy sitemap to export
+        run: cp sitemap.xml out/sitemap.xml
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
