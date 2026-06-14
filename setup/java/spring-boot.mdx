@@ -15,8 +15,7 @@ You can instrument Spring Boot applications with OpenTelemetry using one of two 
 2. **[OpenTelemetry Spring Boot Starter](https://spring.io/blog/2025/11/18/opentelemetry-with-spring-boot)** — A lightweight, flexible alternative to the Java Agent. Choose this if any of the following apply:
     - You are using Spring Boot Native Image, which the Java agent does not support
     - The Java agent's startup overhead exceeds your requirements
-    - You are already using another Java monitoring agent, which may conflict with the OTel agent
-    - You want to configure OpenTelemetry via standard Spring Boot config files (`application.properties` / `application.yml`), which the Java Agent does not read
+    - You are already using another Java monitoring agent, which may conflict with the Otel Java agent
 
     The Spring Boot Starter has less out-of-the-box instrumentation than the Java Agent. However, you can easily close this gap by adding standalone instrumentation libraries for the specific libraries/frameworks you want to instrument — see the [supported libraries list](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/docs/supported-libraries.md).
 
