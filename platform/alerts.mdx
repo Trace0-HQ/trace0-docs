@@ -2,3 +2,101 @@
 title: Alerts
 description: Create and manage alerts for errors and metrics thresholds.
 ---
+
+In Trace0, you can set alerts for both errors and metrics thresholds. To create a new alert, head to the [Alerts](https://app.trace0hq.com/alerts) section and click the `Add New Alert` button:
+
+<img
+  className="block dark:hidden"
+  src="/images/alerts-light.png"
+  alt="Alerts Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/alerts-dark.png"
+  alt="Alerts Dark"
+/>
+
+You can then select the service the alert applies to, then choose an alert type — [Error Alert](#error-alerts) or [Metric Alert](#metric-alerts).
+
+### Error Alerts
+
+For error alerts, the frequency is automatically set to `Every Event`, meaning you will receive an alert each time a request to your service fails.
+
+You can then set a `Destination` — Slack, Email, or both.
+
+- If you select `Email`, enter the email address you want to receive alert notifications.
+
+- If you select `Slack`, enter the [Webhook URL](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for the channel you want to receive alert notifications.
+
+<img
+  className="block dark:hidden"
+  src="/images/error-alert-light.png"
+  alt="Alerts Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/error-alert-dark.png"
+  alt="Alerts Dark"
+/>
+
+### Metric Alerts
+
+For Metric Alerts, you first select the `Metric Type` — Request Latency, Error Rate or Max Memory Used. Each type is explained in further detail below:
+
+<Tabs>
+  <Tab title="Request Latency">
+  For Request Latency alerts, you can set the following parameters:
+  - `Latency Percentile` — P99, P95, P90, P75, P50
+  - `Condition` — Greater than, Greater than or equals, Less than, Less than or equals, Equals
+  - `Threshold` — A number in either milliseconds or seconds
+  - `In The Last (minutes)` — A number in minutes
+    <img
+        className="block dark:hidden"
+        src="/images/request-latency-alert-light.png"
+        alt="Alerts Light"
+    />
+    <img
+        className="hidden dark:block"
+        src="/images/request-latency-alert-dark.png"
+        alt="Alerts Dark"
+    />
+  </Tab>
+  <Tab title="Error Rate">
+  For Error Rate alerts, you can set the following parameters:
+  - `Condition` — Greater than, Greater than or equals, Less than, Less than or equals, Equals
+  - `Threshold` — A number as a percentage, i.e. the error rate.
+  - `In The Last (minutes)` — A number in minutes
+    <img
+        className="block dark:hidden"
+        src="/images/error-rate-alert-light.png"
+        alt="Alerts Light"
+    />
+    <img
+        className="hidden dark:block"
+        src="/images/error-rate-alert-dark.png"
+        alt="Alerts Dark"
+    />
+  </Tab>
+  <Tab title="Max Memory Used">
+  For Max Memory Used alerts, you can set the following parameters:
+  - `Condition` — Greater than, Greater than or equals, Less than, Less than or equals, Equals
+  - `Threshold` — A number in KB, MB, or GB.
+  - `In The Last (minutes)` — A number in minutes
+    <img
+        className="block dark:hidden"
+        src="/images/memory-alert-light.png"
+        alt="Alerts Light"
+    />
+    <img
+        className="hidden dark:block"
+        src="/images/memory-alert-dark.png"
+        alt="Alerts Dark"
+    />
+  </Tab>
+</Tabs>
+
+Finally, you can set a `Destination` — Slack, Email, or both.
+
+- If you select `Email`, enter the email address you want to receive alert notifications.
+
+- If you select `Slack`, enter the [Webhook URL](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for the channel you want to receive alert notifications.
