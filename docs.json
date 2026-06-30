@@ -73,8 +73,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/Trace0_Logo.svg",
-    "dark": "/logo/Trace0_Logo.svg",
+    "light": "/logo/Trace0_Text_Logo.svg",
+    "dark": "/logo/Trace0_Text_Logo.svg",
     "href": "https://app.trace0hq.com"
   },
   "background": {
